@@ -1,36 +1,151 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  color-scheme: dark;
+  /* Obsidian Deep Theme Variables */
+  --bg-base: #0B0B0B;
+  --bg-card: #1A1A1A;
+  --bg-card-hover: #202020;
+  --bg-card-elevated: #262626;
+  
+  --border-subtle: #2E2E2E;
+  --border-focus: #4F46E5;
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #A1A1AA;
+  --text-muted: #52525B;
+  
+  --accent-primary: #4F46E5;
+  --accent-primary-hover: #4338CA;
+  --accent-primary-glow: rgba(79, 70, 229, 0.2);
+  
+  --accent-cyan: #2bd8c4;
+  --accent-green: #40c057;
+  --accent-orange: #f5a623;
+  --accent-purple: #9775fa;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
+[data-theme='light'] {
+  --bg-base: #FDFBF7; /* cream white */
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F9F8F5;
+  --bg-card-elevated: #FFFFFF;
+  
+  --border-subtle: #E5E2DA;
+  --border-focus: #4F46E5;
+  
+  --text-primary: #1A1A1A;
+  --text-secondary: #52525B;
+  --text-muted: #A1A1AA;
+  
+  --accent-primary-glow: rgba(79, 70, 229, 0.1);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Subtle dotted background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle at center, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+[data-theme='light'] body::before {
+  background-image: radial-gradient(circle at center, rgba(0,0,0,0.05) 1px, transparent 1px);
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Utility Classes */
+.bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.bento-card:hover {
+  border-color: rgba(79, 70, 229, 0.5);
+  background: var(--bg-card-hover);
+}
+
+.bento-card.active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 0 20px var(--accent-primary-glow);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #FFFFFF, #A1A1AA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme='light'] .text-gradient {
+  background: linear-gradient(to right, #1A1A1A, #52525B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.label-caps {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: var(--bg-base); 
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: var(--border-subtle); 
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--text-muted); 
 }

@@ -1,318 +1,252 @@
-import { useMemo } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Legend, RadarChart, Radar,
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-} from 'recharts';
-import {
-  BookOpen, Clock, Target, Flame, Calendar,
-  RotateCcw, LayoutDashboard,
-} from 'lucide-react';
-import { getExamById } from '../utils/subjects';
-import { getSubjectData } from '../utils/storage';
+import { useState, useEffect, useMemo } from 'react'
+import { Zap, BarChart, Flame, FlaskConical, PieChart, Lightbulb } from 'lucide-react'
+import SYLLABUS from '../data/syllabus'
+import { flattenSubtopics, computeSummary } from '../utils/progress'
 
-function calcStreak(dates) {
-  if (!dates.length) return 0;
-  const sorted = [...new Set(dates)].sort().reverse();
-  let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < sorted.length; i++) {
-    const expected = new Date(today);
-    expected.setDate(expected.getDate() - i);
-    const expectedStr = expected.toISOString().slice(0, 10);
-    if (sorted[i] === expectedStr) {
-      streak++;
-    } else {
-      break;
+export default function Dashboard({ currentTrack, progress, materials = {}, setView }) {
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const examDate = new Date('2027-02-06T09:00:00').getTime()
+    const distance = examDate - Date.now()
+    if (distance <= 0) return { days: 0, hours: 0, seconds: 0 }
+    return {
+      days: Math.floor(distance / 86400000),
+      hours: Math.floor((distance % 86400000) / 3600000),
+      seconds: Math.floor((distance % 60000) / 1000),
     }
+  })
+  const flat = useMemo(() => flattenSubtopics(SYLLABUS), [])
+
+  const summaryCSE = useMemo(() => computeSummary(flat, progress, 'CSE'), [flat, progress])
+  const summaryDSAI = useMemo(() => computeSummary(flat, progress, 'DSAI'), [flat, progress])
+  
+  const overallPercent = Math.round((summaryCSE.percent + summaryDSAI.percent) / 2) || 0
+
+  const inProgressCount = flat.filter(s => progress[s.id] === 'IN_PROGRESS').length
+  const completedCount = flat.filter(s => progress[s.id] === 'COMPLETED' || progress[s.id] === 'REVISED').length
+
+  const getTopicStats = (topicId) => {
+    const subs = flat.filter(s => s.id.startsWith(topicId))
+    const total = subs.length
+    if (total === 0) return { percent: 0, done: 0, total: 0 }
+    const done = subs.filter(s => progress[s.id] === 'COMPLETED' || progress[s.id] === 'REVISED').length
+    return { percent: Math.round((done / total) * 100), done, total }
   }
-  return streak;
-}
 
-function getHealthScore(data) {
-  let score = 0;
-  if (data.videoLectures.length > 0) score += 20;
-  if (data.notes.length > 0) score += 20;
-  if (data.pyqPractice.length > 0) score += 20;
-  const recentVideos = data.videoLectures.filter((v) => {
-    const d = new Date(v.date);
-    const now = new Date();
-    return (now - d) / (1000 * 60 * 60 * 24) <= 7;
-  }).length;
-  score += Math.min(recentVideos * 3, 20);
-  const recentNotes = data.notes.filter((n) => {
-    const d = new Date(n.date);
-    const now = new Date();
-    return (now - d) / (1000 * 60 * 60 * 24) <= 7;
-  }).length;
-  score += Math.min(recentNotes * 3, 20);
-  return Math.min(score, 100);
-}
+  const getTopicMaterials = (topicId) => {
+    const subs = flat.filter(s => s.id.startsWith(topicId))
+    let videos = 0
+    let docs = 0
+    subs.forEach(s => {
+      const mats = materials[s.id] || []
+      videos += mats.filter(m => m.type === 'YOUTUBE').length
+      docs += mats.filter(m => m.type === 'DOCUMENT' || m.type === 'PYQ').length
+    })
+    return { videos, docs }
+  }
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm shadow-xl">
-      <p className="text-slate-300 mb-1">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="font-medium">
-          {p.name}: {p.value}
-        </p>
-      ))}
-    </div>
-  );
-};
+  const algoStats = getTopicStats('pds-algo')
+  const algoMats = getTopicMaterials('pds-algo')
 
-export default function Dashboard({ exam, onSelectSubject, onSwitchExam }) {
-  const examData = getExamById(exam);
+  const probStats = getTopicStats('em-prob')
+  const probMats = getTopicMaterials('em-prob')
 
-  const subjectsWithStats = useMemo(() => {
-    return examData.subjects.map((s) => {
-      const data = getSubjectData(exam, s.id);
-      const totalVideoMin = data.videoLectures.reduce((a, v) => a + v.timeStudied, 0);
-      const totalNoteMin = data.notes.reduce((a, n) => a + n.timeSpent, 0);
-      const totalQuestions = data.pyqPractice.reduce((a, p) => a + p.questionsAttempted, 0);
-      const allDates = [
-        ...data.videoLectures.map((v) => v.date),
-        ...data.notes.map((n) => n.date),
-        ...data.pyqPractice.map((p) => p.date),
-      ];
-      const lastActivity = allDates.length ? allDates.sort().reverse()[0] : null;
-      const healthScore = getHealthScore(data);
-      return {
-        ...s,
-        totalVideoHours: +(totalVideoMin / 60).toFixed(1),
-        totalNoteHours: +(totalNoteMin / 60).toFixed(1),
-        totalQuestions,
-        lastActivity,
-        healthScore,
-      };
-    });
-  }, [exam]);
+  const mlStats = getTopicStats('ml-sup')
+  const mlMats = getTopicMaterials('ml-sup')
 
-  const totalStudyHours = useMemo(() => {
-    return subjectsWithStats.reduce((a, s) => a + s.totalVideoHours + s.totalNoteHours, 0).toFixed(1);
-  }, [subjectsWithStats]);
-
-  const totalQuestions = useMemo(() => {
-    return subjectsWithStats.reduce((a, s) => a + s.totalQuestions, 0);
-  }, [subjectsWithStats]);
-
-  const activeSubjects = useMemo(() => {
-    return subjectsWithStats.filter((s) => s.lastActivity).length;
-  }, [subjectsWithStats]);
-
-  const allDates = useMemo(() => {
-    const dates = [];
-    examData.subjects.forEach((s) => {
-      const data = getSubjectData(exam, s.id);
-      dates.push(...data.videoLectures.map((v) => v.date));
-      dates.push(...data.notes.map((n) => n.date));
-      dates.push(...data.pyqPractice.map((p) => p.date));
-    });
-    return dates;
-  }, [exam]);
-
-  const overallStreak = calcStreak(allDates);
-  const lastStudyDate = allDates.length ? allDates.sort().reverse()[0] : 'N/A';
-
-  const weeklyData = useMemo(() => {
-    const weekMap = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      weekMap[key] = { date: key, hours: 0, questions: 0 };
-    }
-    examData.subjects.forEach((s) => {
-      const data = getSubjectData(exam, s.id);
-      data.videoLectures.forEach((v) => {
-        if (weekMap[v.date]) weekMap[v.date].hours += v.timeStudied / 60;
-      });
-      data.notes.forEach((n) => {
-        if (weekMap[n.date]) weekMap[n.date].hours += n.timeSpent / 60;
-      });
-      data.pyqPractice.forEach((p) => {
-        if (weekMap[p.date]) weekMap[p.date].questions += p.questionsAttempted;
-      });
-    });
-    return Object.values(weekMap).map((d) => ({
-      ...d,
-      hours: +d.hours.toFixed(1),
-      label: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    }));
-  }, [exam]);
-
-  const monthlyData = useMemo(() => {
-    const monthMap = {};
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      monthMap[key] = { date: key, hours: 0 };
-    }
-    examData.subjects.forEach((s) => {
-      const data = getSubjectData(exam, s.id);
-      data.videoLectures.forEach((v) => {
-        if (monthMap[v.date]) monthMap[v.date].hours += v.timeStudied / 60;
-      });
-      data.notes.forEach((n) => {
-        if (monthMap[n.date]) monthMap[n.date].hours += n.timeSpent / 60;
-      });
-    });
-    return Object.values(monthMap).map((d) => ({
-      ...d,
-      hours: +d.hours.toFixed(1),
-      label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    }));
-  }, [exam]);
-
-  const radarData = useMemo(() => {
-    return subjectsWithStats.map((s) => ({
-      subject: s.shortName,
-      score: s.healthScore,
-    }));
-  }, [subjectsWithStats]);
+  useEffect(() => {
+    const examDate = new Date('2027-02-06T09:00:00').getTime()
+    const timer = setInterval(() => {
+      const now = new Date().getTime()
+      const distance = examDate - now
+      if (distance < 0) {
+        clearInterval(timer)
+        return
+      }
+      setTimeLeft({
+        days: Math.floor(distance / 86400000),
+        hours: Math.floor((distance % 86400000) / 3600000),
+        seconds: Math.floor((distance % 60000) / 1000),
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <LayoutDashboard className="w-6 h-6 text-blue-400" />
-            <h1 className="text-xl font-bold text-white">
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">GATE 2027</span>
-              <span className="text-slate-400 text-sm ml-2">/ {examData.name}</span>
-            </h1>
+    <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      {/* Hero Countdown */}
+      <div style={{ textAlign: 'center', margin: '40px 0 64px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(151, 117, 250, 0.1)', border: '1px solid rgba(151, 117, 250, 0.3)', color: 'var(--accent-purple)', padding: '4px 16px', borderRadius: 'var(--radius-full)', fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '24px' }}>
+          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-purple)' }}></div>
+          COUNTDOWN TO EXCELLENCE
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', fontFamily: 'var(--font-sans)', fontWeight: '800' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{timeLeft.days}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>DAYS</div>
           </div>
-          <button
-            onClick={onSwitchExam}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm bg-slate-800 px-3 py-2 rounded-lg border border-slate-700"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Switch Exam
-          </button>
+          <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>HOURS</div>
+          </div>
+          <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>SECONDS</div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <StatCard icon={<Clock className="w-5 h-5" />} label="Total Study Hours" value={totalStudyHours} color="text-blue-400" />
-          <StatCard icon={<Target className="w-5 h-5" />} label="Questions Solved" value={totalQuestions} color="text-green-400" />
-          <StatCard icon={<BookOpen className="w-5 h-5" />} label="Active Subjects" value={activeSubjects} color="text-purple-400" />
-          <StatCard icon={<Flame className="w-5 h-5" />} label="Overall Streak" value={`${overallStreak}d`} color="text-orange-400" />
-          <StatCard icon={<Calendar className="w-5 h-5" />} label="Last Study" value={lastStudyDate} color="text-cyan-400" />
+      {/* Mini Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '64px' }}>
+        <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(43, 216, 196, 0.1)', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Zap size={20} />
+          </div>
+          <div>
+            <div className="label-caps">ACTIVE TOPICS</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>{inProgressCount}</div>
+          </div>
+        </div>
+        <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <BarChart size={20} />
+          </div>
+          <div>
+            <div className="label-caps">TOTAL PROGRESS</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>{overallPercent}%</div>
+          </div>
+        </div>
+        <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(245, 166, 35, 0.1)', color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Flame size={20} />
+          </div>
+          <div>
+            <div className="label-caps">COMPLETED TOPICS</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>{completedCount}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Syllabus Streams */}
+      <div style={{ marginBottom: '64px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+          <div>
+            <div className="label-caps" style={{ marginBottom: '8px' }}>SUBJECT MODULES</div>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.02em' }}>Core Syllabus Streams</h2>
+          </div>
+          <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '4px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+            <button style={{ background: 'var(--bg-card-elevated)', border: 'none', color: 'var(--text-primary)', padding: '6px 12px', fontSize: '10px', fontWeight: '700', borderRadius: '4px', cursor: 'pointer' }}>GRID VIEW</button>
+            <button onClick={() => setView('analytics')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', padding: '6px 12px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>GRAPH VIEW</button>
+          </div>
         </div>
 
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ChartCard title="Weekly Study Hours">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Hours" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Monthly Study Progress">
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" stroke="#94a3b8" fontSize={10} interval={4} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="hours" stroke="#06b6d4" strokeWidth={2} dot={false} name="Hours" />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* Charts Row 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <ChartCard title="Subject Comparison" className="lg:col-span-2">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={subjectsWithStats}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={10} angle={-30} textAnchor="end" height={60} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="totalVideoHours" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Video Hours" />
-                <Bar dataKey="totalNoteHours" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Note Hours" />
-                <Bar dataKey="totalQuestions" fill="#10b981" radius={[4, 4, 0, 0]} name="Questions" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Subject Health">
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="#334155" />
-                <PolarAngleAxis dataKey="subject" stroke="#94a3b8" fontSize={10} />
-                <PolarRadiusAxis stroke="#475569" fontSize={10} />
-                <Radar name="Health" dataKey="score" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
-                <Tooltip content={<CustomTooltip />} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        {/* Subject Cards */}
-        <h2 className="text-xl font-bold text-white mb-4">Subjects</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-          {subjectsWithStats.map((subject) => (
-            <button
-              key={subject.id}
-              onClick={() => onSelectSubject(subject)}
-              className="text-left bg-slate-800/50 border border-slate-700 rounded-xl p-5 hover:border-slate-500 hover:bg-slate-800 transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: subject.color }} />
-                <h3 className="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">{subject.name}</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                <div>{subject.totalVideoHours}h videos</div>
-                <div>{subject.totalNoteHours}h notes</div>
-                <div>{subject.totalQuestions} questions</div>
-                <div>
-                  <HealthBadge score={subject.healthScore} />
-                </div>
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {/* Card 1 */}
+          <div className="bento-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div className="tag shared">SHARED CORE</div>
+              <FlaskConical size={16} color="var(--text-muted)" />
+            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Algorithms &<br/>Complexity</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              <span>MODULE COMPLETION</span>
+              <span style={{ color: 'var(--accent-purple)' }}>{algoStats.percent}%</span>
+            </div>
+            <div className="progress-track slim" style={{ marginBottom: '16px' }}>
+              <div className="progress-fill" style={{ width: `${algoStats.percent}%`, background: 'var(--accent-purple)' }}></div>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>◫ {algoMats.videos} Videos</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>📄 {algoMats.docs} PDFs</span>
+            </div>
+            <button onClick={() => setView('resources')} style={{ marginTop: 'auto', width: '100%', background: 'var(--bg-card-hover)', border: 'none', color: 'var(--text-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', cursor: 'pointer' }}>
+              VIEW RESOURCES ➔
             </button>
-          ))}
+          </div>
+
+          {/* Card 2 (Active) */}
+          <div className="bento-card active" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div className="tag foundation">FOUNDATION</div>
+              <PieChart size={16} color="var(--accent-primary)" />
+            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Probability &<br/>Statistics</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              <span>MODULE COMPLETION</span>
+              <span style={{ color: 'var(--accent-primary)' }}>{probStats.percent}%</span>
+            </div>
+            <div className="progress-track slim" style={{ marginBottom: '16px', background: 'rgba(79, 70, 229, 0.2)' }}>
+              <div className="progress-fill" style={{ width: `${probStats.percent}%`, background: 'var(--accent-primary)' }}></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--accent-primary)', marginBottom: '32px', fontWeight: '500' }}>
+              {probStats.percent === 100 ? '✓ Mastery Achieved' : `${probStats.done}/${probStats.total} Subtopics Done`}
+            </div>
+            <button onClick={() => setView('syllabus')} style={{ marginTop: 'auto', width: '100%', background: 'var(--accent-primary)', border: 'none', color: 'white', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', cursor: 'pointer' }}>
+              REVIEW NOTES ➔
+            </button>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bento-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div className="tag dsai">DSAI SPECIAL</div>
+              <Lightbulb size={16} color="var(--text-muted)" />
+            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Machine Learning<br/>Fundamentals</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              <span>MODULE COMPLETION</span>
+              <span style={{ color: 'var(--accent-cyan)' }}>{mlStats.percent}%</span>
+            </div>
+            <div className="progress-track slim" style={{ marginBottom: '16px' }}>
+              <div className="progress-fill" style={{ width: `${mlStats.percent}%`, background: 'var(--accent-cyan)' }}></div>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>◫ {mlMats.videos} Videos</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>📄 {mlMats.docs} PDFs</span>
+            </div>
+            <button onClick={() => setView('syllabus')} style={{ marginTop: 'auto', width: '100%', background: 'var(--bg-card-hover)', border: 'none', color: 'var(--text-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', cursor: 'pointer' }}>
+              START LEARNING ➔
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function StatCard({ icon, label, value, color }) {
-  return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-      <div className={`${color} mb-2`}>{icon}</div>
-      <div className="text-xl font-bold text-white">{value}</div>
-      <div className="text-xs text-slate-400 mt-1">{label}</div>
-    </div>
-  );
-}
+      {/* Bottom Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+        <div className="bento-card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
+          <div className="label-caps" style={{ color: 'var(--accent-primary)', marginBottom: '16px' }}>ARCHITECT'S MANIFESTO</div>
+          <h2 style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1.2', marginBottom: '24px', position: 'relative', zIndex: 2 }}>
+            "Structure defines success. Mastery is the result of focused iteration."
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '13px' }}>— The Architect's Handbook, 2027 Edition</p>
+          <div style={{ position: 'absolute', right: '-10%', bottom: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }}></div>
+        </div>
 
-function ChartCard({ title, children, className = '' }) {
-  return (
-    <div className={`bg-slate-800/50 border border-slate-700 rounded-xl p-5 ${className}`}>
-      <h3 className="text-white font-semibold mb-4 text-sm">{title}</h3>
-      {children}
-    </div>
-  );
-}
+        <div className="bento-card" style={{ padding: '32px' }}>
+          <div className="label-caps" style={{ marginBottom: '24px' }}>WORKSPACE CONTEXT</div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Active Stream</span>
+            <span style={{ fontWeight: '600', fontSize: '13px' }}>{currentTrack === 'DUAL' ? 'Dual-Track Sync' : `${currentTrack} Focus`}</span>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Last Local Sync</span>
+            <span style={{ color: 'var(--accent-primary)', fontWeight: '500', fontSize: '13px' }}>Just now</span>
+          </div>
 
-function HealthBadge({ score }) {
-  const color = score >= 70 ? 'text-green-400' : score >= 40 ? 'text-yellow-400' : 'text-red-400';
-  return <span className={`font-medium ${color}`}>{score}/100</span>;
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Persistence</span>
+            <span style={{ color: 'var(--accent-green)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-green)' }}></div>
+              CONNECTED
+            </span>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  )
 }

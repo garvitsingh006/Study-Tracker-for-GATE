@@ -1,62 +1,81 @@
-import { useState } from 'react';
-import { getExam, setExam } from './utils/storage';
-import ExamSelection from './components/ExamSelection';
-import Dashboard from './components/Dashboard';
-import SubjectWorkspace from './components/SubjectWorkspace';
-
-function getInitialState() {
-  const saved = getExam();
-  if (saved) return { exam: saved, view: 'dashboard' };
-  return { exam: null, view: 'examSelect' };
-}
+import { useState, useEffect } from 'react'
+import Sidebar from './components/Sidebar'
+import TopNav from './components/TopNav'
+import Dashboard from './components/Dashboard'
+import SyllabusExplorer from './components/SyllabusExplorer'
+import ResourcesPage from './components/ResourcesPage'
+import AnalyticsPage from './components/AnalyticsPage'
+import SchedulePage from './components/SchedulePage'
+import { useLocalStorage } from './hooks/useLocalStorage'
+import './App.css'
 
 export default function App() {
-  const [initial] = useState(getInitialState);
-  const [exam, setExamState] = useState(initial.exam);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [view, setView] = useState(initial.view);
+  const [currentView, setCurrentView] = useState('dashboard')
+  const [currentTrack, setCurrentTrack] = useLocalStorage('gate-tracker:filter', 'DUAL')
+  const [progress, setProgress] = useLocalStorage('gate-tracker:progress', {})
+  const [materials, setMaterials] = useLocalStorage('gate-tracker:materials', {})
+  const [theme, setTheme] = useLocalStorage('gate-tracker:theme', 'dark')
 
-  const handleSelectExam = (examId) => {
-    setExam(examId);
-    setExamState(examId);
-    setView('dashboard');
-  };
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
-  const handleSelectSubject = (subject) => {
-    setSelectedSubject(subject);
-    setView('workspace');
-  };
-
-  const handleBackToDashboard = () => {
-    setSelectedSubject(null);
-    setView('dashboard');
-  };
-
-  const handleBackToExamSelect = () => {
-    setExamState(null);
-    setSelectedSubject(null);
-    setView('examSelect');
-  };
-
-  if (view === 'examSelect') {
-    return <ExamSelection onSelect={handleSelectExam} />;
-  }
-
-  if (view === 'workspace' && selectedSubject) {
-    return (
-      <SubjectWorkspace
-        exam={exam}
-        subject={selectedSubject}
-        onBack={handleBackToDashboard}
-      />
-    );
+  function renderView() {
+    switch (currentView) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            currentTrack={currentTrack}
+            progress={progress}
+            setView={setCurrentView}
+          />
+        )
+      case 'syllabus':
+        return (
+          <SyllabusExplorer
+            currentTrack={currentTrack}
+            progress={progress}
+            setProgress={setProgress}
+            materials={materials}
+            setMaterials={setMaterials}
+          />
+        )
+      case 'resources':
+        return <ResourcesPage materials={materials} setMaterials={setMaterials} />
+      case 'analytics':
+        return <AnalyticsPage progress={progress} />
+      case 'schedule':
+        return <SchedulePage />
+      default:
+        return (
+          <Dashboard
+            currentTrack={currentTrack}
+            progress={progress}
+            setView={setCurrentView}
+          />
+        )
+    }
   }
 
   return (
-    <Dashboard
-      exam={exam}
-      onSelectSubject={handleSelectSubject}
-      onSwitchExam={handleBackToExamSelect}
-    />
-  );
+    <div className="app-container">
+      <Sidebar
+        currentTrack={currentTrack}
+        setTrack={setCurrentTrack}
+        currentView={currentView}
+        setView={setCurrentView}
+      />
+      <div className="main-wrapper">
+        <TopNav 
+          currentView={currentView} 
+          setView={setCurrentView} 
+          theme={theme}
+          setTheme={setTheme}
+        />
+        <main className="page-content">
+          {renderView()}
+        </main>
+      </div>
+    </div>
+  )
 }
