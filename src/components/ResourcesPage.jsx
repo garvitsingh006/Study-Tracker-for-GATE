@@ -41,7 +41,7 @@ export default function ResourcesPage({ materials, setMaterials }) {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       {/* Header */}
       <div style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>Saved Resources</h1>
@@ -49,10 +49,12 @@ export default function ResourcesPage({ materials, setMaterials }) {
       </div>
 
       {/* Controls */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+      <div className="resource-controls" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', flexGrow: 1 }}>
-          <Search size={15} color="var(--text-muted)" />
+          <Search size={15} color="var(--text-muted)" aria-hidden="true" />
+          <label htmlFor="resource-search" className="sr-only">Search resources</label>
           <input
+            id="resource-search"
             type="text"
             placeholder="Search resources or topics…"
             value={searchTerm}
@@ -60,12 +62,14 @@ export default function ResourcesPage({ materials, setMaterials }) {
             style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: 'var(--text-primary)', fontSize: '13px' }}
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
-              <X size={13} />
+            <button onClick={() => setSearchTerm('')} aria-label="Clear search" style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}>
+              <X size={13} aria-hidden="true" />
             </button>
           )}
         </div>
+        <label htmlFor="resource-type-filter" className="sr-only">Filter by type</label>
         <select
+          id="resource-type-filter"
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}

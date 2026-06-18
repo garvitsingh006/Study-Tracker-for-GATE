@@ -27,7 +27,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       <div style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>Weekly Schedule</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Plan your study sessions for the week. Today is <strong style={{ color: 'var(--accent-primary)' }}>{today}</strong>.</p>

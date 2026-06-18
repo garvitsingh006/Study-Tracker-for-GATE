@@ -9,7 +9,7 @@ const COLORS = {
   REVISED: 'var(--accent-primary)',
 }
 
-export default function AnalyticsPage({ progress }) {
+export default function AnalyticsPage({ progress, activity = {} }) {
   const flat = useMemo(() => flattenSubtopics(SYLLABUS), [])
 
   const summaryCSE = useMemo(() => computeSummary(flat, progress, 'CSE'), [flat, progress])
@@ -44,14 +44,14 @@ export default function AnalyticsPage({ progress }) {
   const TRACK_COLOR = { CSE: 'var(--accent-cyan)', DSAI: 'var(--accent-purple)', SHARED: 'var(--accent-primary)' }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       <div style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>Analytics</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Track your completion across both streams.</p>
       </div>
 
       {/* Top summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '40px' }}>
+      <div className="analytics-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '32px' }}>
         {[
           { label: 'OVERALL', value: `${overallPct}%`, sub: `${totalDone}/${totalTopics} topics`, color: 'var(--accent-primary)' },
           { label: 'CSE', value: `${summaryCSE.percent}%`, sub: `${summaryCSE.completed + summaryCSE.revised}/${summaryCSE.total} done`, color: 'var(--accent-cyan)' },
@@ -69,7 +69,7 @@ export default function AnalyticsPage({ progress }) {
       {/* Segmented progress ring (simple bar version) */}
       <div className="bento-card" style={{ marginBottom: '32px', padding: '24px' }}>
         <div className="label-caps" style={{ marginBottom: '16px' }}>OVERALL BREAKDOWN</div>
-        <div style={{ display: 'flex', height: '12px', borderRadius: '6px', overflow: 'hidden', gap: '2px' }}>
+        <div style={{ display: 'flex', height: '12px', borderRadius: '6px', overflow: 'hidden', gap: '2px' }} role="progressbar" aria-valuenow={overallPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Overall progress: ${overallPct}%`}>
           {(['COMPLETED', 'REVISED', 'IN_PROGRESS', 'UNSTARTED']).map(status => {
             const count = flat.filter(s => (progress[s.id] || 'UNSTARTED') === status).length
             const pct = totalTopics ? (count / totalTopics) * 100 : 0
@@ -111,7 +111,7 @@ export default function AnalyticsPage({ progress }) {
               </div>
             </div>
             {/* Segmented bar */}
-            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', gap: '1px' }}>
+            <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', gap: '1px' }} role="progressbar" aria-valuenow={sub.pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${sub.name} progress: ${sub.pct}%`}>
               {(['COMPLETED', 'REVISED', 'IN_PROGRESS', 'UNSTARTED']).map(status => {
                 const count = sub.counts[status]
                 const pct = sub.total ? (count / sub.total) * 100 : 0

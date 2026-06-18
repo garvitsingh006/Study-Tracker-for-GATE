@@ -280,3 +280,174 @@
   background: rgba(43, 216, 196, 0.15);
   color: var(--accent-cyan);
 }
+
+/* Responsive overrides */
+@media (max-width: 768px) {
+  .dashboard-view .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-view .modules-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-view .bottom-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-countdown {
+    font-size: 64px !important;
+    gap: 16px !important;
+  }
+
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .mocks-pyq-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mocks-pattern-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .syllabus-progress-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .syllabus-pdf-grid {
+    flex-direction: column !important;
+  }
+
+  .analytics-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .schedule-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .resource-controls {
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-countdown {
+    font-size: 40px !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-view .stats-grid {
+    gap: 8px !important;
+  }
+
+  .dashboard-view .modules-grid {
+    gap: 8px !important;
+  }
+
+  .analytics-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bottom-grid {
+    gap: 8px !important;
+  }
+
+  .timeline-scroll {
+    min-width: 600px;
+  }
+}
+
+/* Avatar with initials */
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+}
+
+/* Profile modal */
+.profile-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.profile-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 360px;
+  max-width: 90vw;
+}
+
+.profile-modal h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.profile-modal label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-modal input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.profile-modal input:focus {
+  border-color: var(--accent-primary);
+}
+
+.profile-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.profile-modal-actions button {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.profile-modal-actions .btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.profile-modal-actions .btn-primary {
+  background: var(--accent-primary);
+  color: white;
+}

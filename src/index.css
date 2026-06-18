@@ -96,6 +96,40 @@ a {
 }
 
 /* Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  background: var(--accent-primary);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  top: 8px;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
 .bento-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -148,4 +182,165 @@ a {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted); 
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Button active states */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.nav-item:active {
+  transform: scale(0.98);
+}
+
+.top-tab:active {
+  transform: scale(0.97);
+}
+
+/* Card hover lift */
+.bento-card {
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bento-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .top-nav {
+    padding: 0 24px;
+  }
+  .top-nav-tabs {
+    gap: 20px;
+  }
+  .page-content {
+    padding: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-wrapper {
+    width: 100%;
+  }
+
+  .top-nav {
+    padding: 0 16px;
+  }
+
+  .top-nav-tabs {
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .top-nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .top-tab {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .page-content {
+    padding: 16px;
+  }
+
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .sync-btn-desktop {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 0 12px;
+    height: 56px;
+  }
+
+  .top-nav-tabs {
+    gap: 16px;
+  }
+
+  .top-tab {
+    font-size: 11px;
+  }
+
+  .page-content {
+    padding: 12px;
+  }
+
+  .bento-card {
+    padding: 16px;
+  }
+
+  .label-caps {
+    font-size: 9px;
+  }
+
+  h1 {
+    font-size: 24px !important;
+  }
+
+  h2 {
+    font-size: 16px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-btn {
+    display: none !important;
+  }
 }

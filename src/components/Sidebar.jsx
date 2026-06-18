@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, BookOpen, Layers, Repeat, Settings, Download, Upload } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Layers, Repeat, ClipboardCheck, Github, ExternalLink, Download, Upload } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { exportData, importData } from '../utils/backup'
 
@@ -15,7 +15,7 @@ function getTimeLeft() {
   }
 }
 
-export default function Sidebar({ currentTrack, setTrack, currentView, setView }) {
+export default function Sidebar({ currentTrack, setTrack, currentView, setView, isOpen, profile }) {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft)
 
   useEffect(() => {
@@ -33,24 +33,32 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView }
   }
 
   const fmt = n => String(n).padStart(2, '0')
+  const displayName = profile?.name?.trim() || 'Student'
 
   return (
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} role="navigation" aria-label="Main navigation">
       <div className="sidebar-header">
-        <div className="logo-box">G</div>
+        <div className="logo-box" aria-hidden="true">G</div>
         <div>
           <h2 className="brand-name">GATE Preparation Tracker</h2>
           <span className="brand-sub">CSE &amp; DSAI 2027</span>
         </div>
       </div>
 
+      {profile?.name?.trim() && (
+        <div style={{ padding: '0 24px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          Hi, <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{displayName}</span>
+        </div>
+      )}
+
       <nav className="sidebar-nav">
         {/* Main nav item */}
         <button
           className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
           onClick={() => setView('dashboard')}
+          aria-current={currentView === 'dashboard' ? 'page' : undefined}
         >
-          <LayoutDashboard size={16} />
+          <LayoutDashboard size={16} aria-hidden="true" />
           <span>Dashboard</span>
         </button>
 
@@ -60,39 +68,40 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView }
         <button
           className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'CSE' ? 'active' : ''}`}
           onClick={() => { setTrack('CSE'); setView('syllabus') }}
+          aria-current={currentView === 'syllabus' && currentTrack === 'CSE' ? 'page' : undefined}
         >
-          <BookOpen size={16} />
+          <BookOpen size={16} aria-hidden="true" />
           <span>CSE Track</span>
         </button>
 
         <button
           className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'DSAI' ? 'active' : ''}`}
           onClick={() => { setTrack('DSAI'); setView('syllabus') }}
+          aria-current={currentView === 'syllabus' && currentTrack === 'DSAI' ? 'page' : undefined}
         >
-          <Layers size={16} />
+          <Layers size={16} aria-hidden="true" />
           <span>DSAI Track</span>
         </button>
 
         <button
           className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'DUAL' ? 'active' : ''}`}
           onClick={() => { setTrack('DUAL'); setView('syllabus') }}
+          aria-current={currentView === 'syllabus' && currentTrack === 'DUAL' ? 'page' : undefined}
         >
-          <Repeat size={16} />
+          <Repeat size={16} aria-hidden="true" />
           <span>Dual View</span>
         </button>
+
+        <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '8px 0' }} />
+
         <button
-          className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'Mocks' ? 'active' : ''}`}
-          onClick={() => { setTrack('Mocks'); setView('Mocks') }}
+          className={`nav-item ${currentView === 'mocks' ? 'active' : ''}`}
+          onClick={() => setView('mocks')}
+          aria-current={currentView === 'mocks' ? 'page' : undefined}
         >
-          <Repeat size={16} />
+          <ClipboardCheck size={16} aria-hidden="true" />
           <span>Mock Tests</span>
-        </button>
-        <button
-          className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'News' ? 'active' : ''}`}
-          onClick={() => { setTrack('News'); setView('News') }}
-        >
-          <Repeat size={16} />
-          <span>News</span>
+          <span style={{ marginLeft: 'auto', fontSize: '8px', background: 'rgba(245, 166, 35, 0.15)', color: 'var(--accent-orange)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', letterSpacing: '0.05em' }}>SOON</span>
         </button>
       </nav>
 
@@ -110,22 +119,32 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView }
           <button
             onClick={exportData}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '7px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}
+            aria-label="Export data as JSON"
           >
-            <Download size={12} /> Export
+            <Download size={12} aria-hidden="true" /> Export
           </button>
           <label style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '7px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>
-            <Upload size={12} /> Import
-            <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+            <Upload size={12} aria-hidden="true" /> Import
+            <input type="file" accept=".json" onChange={handleImport} className="sr-only" aria-label="Import data from JSON file" />
           </label>
         </div>
 
-        <button
-          className="footer-link"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', padding: '4px 0' }}
-          onClick={() => setView('analytics')}
+        {/* GitHub Card */}
+        <a
+          href="https://github.com/garvitsingh006/Study-Tracker-for-GATE"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', textDecoration: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}
         >
-          <Settings size={14} /> Settings &amp; Analytics
-        </button>
+          <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Github size={16} color="var(--text-primary)" aria-hidden="true" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Study Tracker for GATE</div>
+            <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Open Source</div>
+          </div>
+          <ExternalLink size={12} color="var(--text-muted)" aria-hidden="true" />
+        </a>
       </div>
     </aside>
   )

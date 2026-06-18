@@ -1,9 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Zap, BarChart, Flame, FlaskConical, PieChart, Lightbulb } from 'lucide-react'
+import { Zap, BarChart, Flame, FlaskConical, PieChart, Lightbulb, Calendar } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { flattenSubtopics, computeSummary } from '../utils/progress'
+import { computeStreak } from '../utils/activity'
 
-export default function Dashboard({ currentTrack, progress, materials = {}, setView }) {
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+export default function Dashboard({ currentTrack, progress, materials = {}, activity = {}, profile, setView }) {
   const [timeLeft, setTimeLeft] = useState(() => {
     const examDate = new Date('2027-02-06T09:00:00').getTime()
     const distance = examDate - Date.now()
@@ -23,6 +31,7 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
 
   const inProgressCount = flat.filter(s => progress[s.id] === 'IN_PROGRESS').length
   const completedCount = flat.filter(s => progress[s.id] === 'COMPLETED' || progress[s.id] === 'REVISED').length
+  const streak = computeStreak(activity)
 
   const getTopicStats = (topicId) => {
     const subs = flat.filter(s => s.id.startsWith(topicId))
@@ -71,38 +80,50 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
     return () => clearInterval(timer)
   }, [])
 
+  const greeting = getGreeting()
+  const displayName = profile?.name?.trim() || null
+
   return (
-    <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       {/* Hero Countdown */}
-      <div style={{ textAlign: 'center', margin: '40px 0 64px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(151, 117, 250, 0.1)', border: '1px solid rgba(151, 117, 250, 0.3)', color: 'var(--accent-purple)', padding: '4px 16px', borderRadius: 'var(--radius-full)', fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '24px' }}>
-          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-purple)' }}></div>
+      <div style={{ textAlign: 'center', margin: '32px 0 48px' }}>
+        {displayName && (
+          <h1 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>
+            {greeting}, {displayName}
+          </h1>
+        )}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(151, 117, 250, 0.1)', border: '1px solid rgba(151, 117, 250, 0.3)', color: 'var(--accent-purple)', padding: '4px 12px', borderRadius: 'var(--radius-full)', fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '20px' }}>
+          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-purple)' }} aria-hidden="true"></div>
           COUNTDOWN TO EXCELLENCE
         </div>
         
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', fontFamily: 'var(--font-sans)', fontWeight: '800' }}>
+        <div className="dashboard-countdown" style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontFamily: 'var(--font-sans)', fontWeight: '800' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{timeLeft.days}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>DAYS</div>
+            <div style={{ fontSize: 'clamp(40px, 15vw, 120px)', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{timeLeft.days}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '12px' }}>DAYS</div>
           </div>
-          <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
+          <div aria-hidden="true" style={{ fontSize: 'clamp(40px, 15vw, 120px)', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>HOURS</div>
+            <div style={{ fontSize: 'clamp(40px, 15vw, 120px)', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '12px' }}>HOURS</div>
           </div>
-          <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
+          <div aria-hidden="true" style={{ fontSize: 'clamp(40px, 15vw, 120px)', lineHeight: '1', color: 'var(--border-subtle)', fontWeight: '400' }}>:</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: '120px', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '16px' }}>SECONDS</div>
+            <div style={{ fontSize: 'clamp(40px, 15vw, 120px)', lineHeight: '1', color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', letterSpacing: '0.15em', marginTop: '12px' }}>SECONDS</div>
           </div>
+        </div>
+
+        <div className="sr-only" aria-live="polite">
+          {timeLeft.days} days, {timeLeft.hours} hours, {timeLeft.seconds} seconds until GATE 2027 exam
         </div>
       </div>
 
       {/* Mini Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '64px' }}>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '48px' }}>
         <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(43, 216, 196, 0.1)', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Zap size={20} />
+            <Zap size={20} aria-hidden="true" />
           </div>
           <div>
             <div className="label-caps">ACTIVE TOPICS</div>
@@ -111,7 +132,7 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
         </div>
         <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BarChart size={20} />
+            <BarChart size={20} aria-hidden="true" />
           </div>
           <div>
             <div className="label-caps">TOTAL PROGRESS</div>
@@ -120,41 +141,43 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
         </div>
         <div className="bento-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(245, 166, 35, 0.1)', color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Flame size={20} />
+            <Flame size={20} aria-hidden="true" />
           </div>
           <div>
-            <div className="label-caps">COMPLETED TOPICS</div>
-            <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>{completedCount}</div>
+            <div className="label-caps">STREAK</div>
+            <div style={{ fontSize: '20px', fontWeight: '700', marginTop: '4px' }}>
+              {streak > 0 ? `${streak} day${streak > 1 ? 's' : ''}` : '—'}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Syllabus Streams */}
-      <div style={{ marginBottom: '64px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+      <div style={{ marginBottom: '48px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <div className="label-caps" style={{ marginBottom: '8px' }}>SUBJECT MODULES</div>
-            <h2 style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.02em' }}>Core Syllabus Streams</h2>
+            <div className="label-caps" style={{ marginBottom: '6px' }}>SUBJECT MODULES</div>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em' }}>Core Syllabus Streams</h2>
           </div>
-          <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '4px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-            <button style={{ background: 'var(--bg-card-elevated)', border: 'none', color: 'var(--text-primary)', padding: '6px 12px', fontSize: '10px', fontWeight: '700', borderRadius: '4px', cursor: 'pointer' }}>GRID VIEW</button>
-            <button onClick={() => setView('analytics')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', padding: '6px 12px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>GRAPH VIEW</button>
+          <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+            <button style={{ background: 'var(--bg-card-elevated)', border: 'none', color: 'var(--text-primary)', padding: '5px 10px', fontSize: '10px', fontWeight: '700', borderRadius: '4px', cursor: 'pointer' }}>GRID VIEW</button>
+            <button onClick={() => setView('analytics')} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', padding: '5px 10px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>GRAPH VIEW</button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <div className="modules-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
           {/* Card 1 */}
           <div className="bento-card" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div className="tag shared">SHARED CORE</div>
-              <FlaskConical size={16} color="var(--text-muted)" />
+              <FlaskConical size={16} color="var(--text-muted)" aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Algorithms &<br/>Complexity</h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               <span>MODULE COMPLETION</span>
               <span style={{ color: 'var(--accent-purple)' }}>{algoStats.percent}%</span>
             </div>
-            <div className="progress-track slim" style={{ marginBottom: '16px' }}>
+            <div className="progress-track slim" style={{ marginBottom: '16px' }} role="progressbar" aria-valuenow={algoStats.percent} aria-valuemin={0} aria-valuemax={100}>
               <div className="progress-fill" style={{ width: `${algoStats.percent}%`, background: 'var(--accent-purple)' }}></div>
             </div>
             <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px' }}>
@@ -170,14 +193,14 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
           <div className="bento-card active" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div className="tag foundation">FOUNDATION</div>
-              <PieChart size={16} color="var(--accent-primary)" />
+              <PieChart size={16} color="var(--accent-primary)" aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Probability &<br/>Statistics</h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               <span>MODULE COMPLETION</span>
               <span style={{ color: 'var(--accent-primary)' }}>{probStats.percent}%</span>
             </div>
-            <div className="progress-track slim" style={{ marginBottom: '16px', background: 'rgba(79, 70, 229, 0.2)' }}>
+            <div className="progress-track slim" style={{ marginBottom: '16px', background: 'rgba(79, 70, 229, 0.2)' }} role="progressbar" aria-valuenow={probStats.percent} aria-valuemin={0} aria-valuemax={100}>
               <div className="progress-fill" style={{ width: `${probStats.percent}%`, background: 'var(--accent-primary)' }}></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--accent-primary)', marginBottom: '32px', fontWeight: '500' }}>
@@ -192,14 +215,14 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
           <div className="bento-card" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div className="tag dsai">DSAI SPECIAL</div>
-              <Lightbulb size={16} color="var(--text-muted)" />
+              <Lightbulb size={16} color="var(--text-muted)" aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '32px', lineHeight: '1.3' }}>Machine Learning<br/>Fundamentals</h3>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
               <span>MODULE COMPLETION</span>
               <span style={{ color: 'var(--accent-cyan)' }}>{mlStats.percent}%</span>
             </div>
-            <div className="progress-track slim" style={{ marginBottom: '16px' }}>
+            <div className="progress-track slim" style={{ marginBottom: '16px' }} role="progressbar" aria-valuenow={mlStats.percent} aria-valuemin={0} aria-valuemax={100}>
               <div className="progress-fill" style={{ width: `${mlStats.percent}%`, background: 'var(--accent-cyan)' }}></div>
             </div>
             <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px' }}>
@@ -213,36 +236,46 @@ export default function Dashboard({ currentTrack, progress, materials = {}, setV
         </div>
       </div>
 
-      {/* Bottom Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-        <div className="bento-card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
-          <div className="label-caps" style={{ color: 'var(--accent-primary)', marginBottom: '16px' }}>ARCHITECT'S MANIFESTO</div>
-          <h2 style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1.2', marginBottom: '24px', position: 'relative', zIndex: 2 }}>
-            "Structure defines success. Mastery is the result of focused iteration."
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '13px' }}>— The Architect's Handbook, 2027 Edition</p>
-          <div style={{ position: 'absolute', right: '-10%', bottom: '-20%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)', zIndex: 1, pointerEvents: 'none' }}></div>
+      {/* GATE 2027 Timeline */}
+      <div style={{ marginBottom: '48px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+          <Calendar size={18} color="var(--accent-primary)" aria-hidden="true" />
+          <h2 style={{ fontSize: '18px', fontWeight: '600' }}>GATE 2027 Timeline</h2>
         </div>
-
-        <div className="bento-card" style={{ padding: '32px' }}>
-          <div className="label-caps" style={{ marginBottom: '24px' }}>WORKSPACE CONTEXT</div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Active Stream</span>
-            <span style={{ fontWeight: '600', fontSize: '13px' }}>{currentTrack === 'DUAL' ? 'Dual-Track Sync' : `${currentTrack} Focus`}</span>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: '16px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Last Local Sync</span>
-            <span style={{ color: 'var(--accent-primary)', fontWeight: '500', fontSize: '13px' }}>Just now</span>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Persistence</span>
-            <span style={{ color: 'var(--accent-green)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-green)' }}></div>
-              CONNECTED
-            </span>
+        
+        <div className="bento-card" style={{ padding: '24px', overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0', minWidth: '700px' }}>
+            {[
+              { date: 'Nov 2026', title: 'Notification', desc: 'Official notification by IIT' },
+              { date: 'Nov-Dec 2026', title: 'Applications', desc: 'Online form available' },
+              { date: 'Jan 2027', title: 'Admit Card', desc: 'Download from GOAPS' },
+              { date: 'Feb 2027', title: 'Exam Days', desc: 'CBT across India', highlight: true },
+              { date: 'Mar 2027', title: 'Answer Key', desc: 'Provisional key released' },
+              { date: 'Mar 2027', title: 'Results', desc: 'Score card on GOAPS' },
+            ].map((item, i) => (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                {/* Connector line */}
+                {i < 5 && (
+                  <div style={{ position: 'absolute', top: '8px', left: '50%', right: '-50%', height: '2px', background: 'var(--border-subtle)', zIndex: 0 }} aria-hidden="true"></div>
+                )}
+                {/* Dot */}
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: item.highlight ? 'var(--accent-orange)' : 'var(--bg-card)',
+                  border: `2px solid ${item.highlight ? 'var(--accent-orange)' : 'var(--border-subtle)'}`,
+                  zIndex: 1,
+                  marginBottom: '10px',
+                }} aria-hidden="true"></div>
+                {/* Content */}
+                <div style={{ textAlign: 'center', padding: '0 8px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: '600', marginBottom: '4px' }}>{item.date}</div>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: item.highlight ? 'var(--accent-orange)' : 'var(--text-primary)', marginBottom: '2px' }}>{item.title}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{item.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
