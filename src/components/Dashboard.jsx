@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Zap, BarChart, Flame, FlaskConical, PieChart, Lightbulb, Calendar } from 'lucide-react'
+import { Zap, BarChart, Flame, FlaskConical, PieChart, Lightbulb, Calendar, Github } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { flattenSubtopics, computeSummary } from '../utils/progress'
 import { computeStreak } from '../utils/activity'
@@ -85,6 +85,34 @@ export default function Dashboard({ currentTrack, progress, materials = {}, acti
 
   return (
     <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
+      {/* Repo Link */}
+      <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '-16px' }}>
+        <a
+          href="https://github.com/garvitsingh006/Prep-Tracker-for-GATE"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '11px',
+            fontWeight: '600',
+            color: 'var(--text-secondary)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-full)',
+            textDecoration: 'none',
+            transition: 'color 0.2s, border-color 0.2s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--text-secondary)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-subtle)' }}
+        >
+          <Github size={13} aria-hidden="true" />
+          Source Code
+        </a>
+      </div>
+
       {/* Hero Countdown */}
       <div style={{ textAlign: 'center', margin: '32px 0 48px' }}>
         {displayName && (

@@ -1,4 +1,4 @@
-# GATE 2027 Study Tracker
+# GATE 2027 Prep Tracker
 
 A personalized study tracker for GATE exam preparation (DA & CSIT). Track video lectures, notes, and PYQ practice across subjects with visual analytics.
 
