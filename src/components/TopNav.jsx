@@ -95,11 +95,27 @@ function ProfileModal({ profile, setProfile, onClose }) {
 export default function TopNav({ currentView, setView, theme, setTheme, profile, setProfile, activity, onMenuToggle }) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [readNotifications, setReadNotifications] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('readNotifications') || '[]') } catch { return [] }
+  })
   const notifRef = useRef(null)
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
   const notifications = generateNotifications(activity)
   const initials = profile?.name?.trim() ? profile.name.trim().charAt(0).toUpperCase() : 'G'
+  const unreadCount = notifications.filter(n => !readNotifications.includes(n.id)).length
+
+  function openNotifications() {
+    setShowNotifications(prev => {
+      if (!prev) {
+        const allIds = notifications.map(n => n.id)
+        const updated = [...new Set([...readNotifications, ...allIds])]
+        setReadNotifications(updated)
+        localStorage.setItem('readNotifications', JSON.stringify(updated))
+      }
+      return !prev
+    })
+  }
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -167,12 +183,12 @@ export default function TopNav({ currentView, setView, theme, setTheme, profile,
           <div style={{ position: 'relative' }} ref={notifRef}>
             <button 
               className="icon-btn" 
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label={`Notifications${notifications.length > 0 ? ` (${notifications.length} unread)` : ''}`}
+              onClick={openNotifications}
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
               aria-expanded={showNotifications}
             >
               <Bell size={18} aria-hidden="true" />
-              {notifications.length > 0 && (
+              {unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: '2px', right: '2px', width: '8px', height: '8px', background: 'var(--accent-orange)', borderRadius: '50%', border: '2px solid var(--bg-base)' }} aria-hidden="true"></span>
               )}
             </button>
