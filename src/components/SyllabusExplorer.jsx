@@ -203,7 +203,7 @@ export default function SyllabusExplorer({ currentTrack, progress, setProgress, 
   const summaryDSAI = useMemo(() => computeSummary(flat, progress, 'DSAI'), [flat, progress])
 
   function handleCycleStatus(subtopicId) {
-    setProgress(prev => ({ ...prev, [subtopicId]: nextStatus(prev[subtopicId] || 'UNSTARTED') }))
+    setProgress(subtopicId, nextStatus(progress[subtopicId] || 'UNSTARTED'))
   }
 
   function handleAddMaterial(subtopicId, material) {
