@@ -80,6 +80,20 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView }
           <Repeat size={16} />
           <span>Dual View</span>
         </button>
+        <button
+          className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'Mocks' ? 'active' : ''}`}
+          onClick={() => { setTrack('Mocks'); setView('Mocks') }}
+        >
+          <Repeat size={16} />
+          <span>Mock Tests</span>
+        </button>
+        <button
+          className={`nav-item ${currentView !== 'dashboard' && currentTrack === 'News' ? 'active' : ''}`}
+          onClick={() => { setTrack('News'); setView('News') }}
+        >
+          <Repeat size={16} />
+          <span>News</span>
+        </button>
       </nav>
 
       <div className="sidebar-footer">
