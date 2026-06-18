@@ -218,7 +218,7 @@ export default function Dashboard({ currentTrack, progress, materials = {}, acti
           </div>
 
           {/* Card 2 (Active) */}
-          <div className="bento-card active" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="bento-card" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div className="tag foundation">FOUNDATION</div>
               <PieChart size={16} color="var(--accent-primary)" aria-hidden="true" />
@@ -234,7 +234,7 @@ export default function Dashboard({ currentTrack, progress, materials = {}, acti
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--accent-primary)', marginBottom: '32px', fontWeight: '500' }}>
               {probStats.percent === 100 ? '✓ Mastery Achieved' : `${probStats.done}/${probStats.total} Subtopics Done`}
             </div>
-            <button onClick={() => setView('syllabus')} style={{ marginTop: 'auto', width: '100%', background: 'var(--accent-primary)', border: 'none', color: 'white', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', cursor: 'pointer' }}>
+            <button onClick={() => setView('syllabus')} style={{ marginTop: 'auto', width: '100%', background: 'var(--bg-card-hover)', border: 'none', color: 'var(--text-primary)', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', cursor: 'pointer' }}>
               REVIEW NOTES ➔
             </button>
           </div>
