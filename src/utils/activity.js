@@ -46,26 +46,6 @@ export function computeStreak(activity) {
   return streak
 }
 
-export function computeHeatmapData(activity, days = 90) {
-  const dayCounts = {}
-  for (const entries of Object.values(activity)) {
-    for (const e of entries) {
-      const day = e.at.slice(0, 10)
-      dayCounts[day] = (dayCounts[day] || 0) + 1
-    }
-  }
-
-  const result = []
-  const now = new Date()
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
-    result.push({ date: key, count: dayCounts[key] || 0 })
-  }
-  return result
-}
-
 export function getLastActivityTimestamp(activity) {
   let latest = null
   for (const entries of Object.values(activity)) {
@@ -74,29 +54,4 @@ export function getLastActivityTimestamp(activity) {
     }
   }
   return latest
-}
-
-export function computeVelocity(activity, flat, weeks = 4) {
-  const cutoff = Date.now() - weeks * 7 * 86400000
-  const weeklyCounts = new Array(weeks).fill(0)
-
-  for (const entries of Object.values(activity)) {
-    for (const e of entries) {
-      if (e.to !== STATUS.COMPLETED && e.to !== STATUS.REVISED) continue
-      const ts = new Date(e.at).getTime()
-      if (ts < cutoff) continue
-      const weekIdx = Math.floor((Date.now() - ts) / (7 * 86400000))
-      if (weekIdx < weeks) weeklyCounts[weeks - 1 - weekIdx]++
-    }
-  }
-
-  const avg = weeklyCounts.reduce((a, b) => a + b, 0) / weeks
-  const remaining = flat.filter(s => {
-    const st = s._status
-    return st !== STATUS.COMPLETED && st !== STATUS.REVISED
-  }).length
-
-  const estimatedWeeks = avg > 0 ? remaining / avg : Infinity
-
-  return { weeklyCounts, avgVelocity: avg, remaining, estimatedWeeks }
 }
