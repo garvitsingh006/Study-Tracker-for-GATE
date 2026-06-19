@@ -7,6 +7,7 @@ import ResourcesPage from './components/ResourcesPage'
 import AnalyticsPage from './components/AnalyticsPage'
 import SchedulePage from './components/SchedulePage'
 import MockTests from './components/MockTests'
+import GateStats from './components/GateStats'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { logStatusChange } from './utils/activity'
 import './App.css'
@@ -70,6 +71,8 @@ export default function App() {
         return <SchedulePage schedule={schedule} setSchedule={setSchedule} progress={progress} />
       case 'mocks':
         return <MockTests />
+      case 'cutoffs':
+        return <GateStats />
       default:
         return (
           <Dashboard

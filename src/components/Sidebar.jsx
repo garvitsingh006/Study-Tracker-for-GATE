@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, BookOpen, Layers, Repeat, ClipboardCheck, Github, ExternalLink, Download, Upload } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Layers, Repeat, Github, ExternalLink, Download, Upload } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { exportData, importData } from '../utils/backup'
 
@@ -94,15 +94,6 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView, 
 
         <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '8px 0' }} />
 
-        <button
-          className={`nav-item ${currentView === 'mocks' ? 'active' : ''}`}
-          onClick={() => setView('mocks')}
-          aria-current={currentView === 'mocks' ? 'page' : undefined}
-        >
-          <ClipboardCheck size={16} aria-hidden="true" />
-          <span>Mock Tests</span>
-          <span style={{ marginLeft: 'auto', fontSize: '8px', background: 'rgba(245, 166, 35, 0.15)', color: 'var(--accent-orange)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700', letterSpacing: '0.05em' }}>SOON</span>
-        </button>
       </nav>
 
       <div className="sidebar-footer">

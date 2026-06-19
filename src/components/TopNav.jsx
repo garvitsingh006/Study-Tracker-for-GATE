@@ -8,7 +8,6 @@ const TABS = [
   { id: 'resources', label: 'Resources' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'schedule', label: 'Schedule' },
-  { id: 'mocks', label: 'PYQs' },
 ]
 
 function generateNotifications(activity) {
