@@ -152,7 +152,7 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView, 
             <Github size={16} color="var(--text-primary)" aria-hidden="true" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Study Tracker for GATE</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Prep Tracker for GATE</div>
             <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Open Source</div>
           </div>
           <ExternalLink size={12} color="var(--text-muted)" aria-hidden="true" />
