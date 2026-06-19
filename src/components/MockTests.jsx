@@ -1,6 +1,15 @@
-import { BookOpen, Calendar, Target, Clock, FileText, Award, Lock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BookOpen, Calendar, Target, Clock, FileText, Award, Lock, ExternalLink, Download, CheckCircle } from 'lucide-react'
 
-const PYQ_YEARS = [2025, 2024, 2023, 2022]
+const CSE_PAPERS = [
+  { year: 2025, label: 'GATE CS-1 2025' },
+  { year: 2025, label: 'GATE CS-2 2025' },
+  { year: 2024, label: 'GATE CS-1 2024' },
+  { year: 2024, label: 'GATE CS-2 2024' },
+  { year: 2023, label: 'GATE CSE 2023' },
+  { year: 2022, label: 'GATE CSE 2022' },
+]
+const DSAI_YEARS = [2025, 2024]
 
 const CSE_WEIGHTAGE = [
   { subject: 'General Aptitude', marks: 15, percent: '15%' },
@@ -17,6 +26,24 @@ const CSE_WEIGHTAGE = [
 ]
 
 export default function MockTests() {
+  const [availability, setAvailability] = useState({ cse: [], dsai: [] })
+
+  useEffect(() => {
+    fetch('/papers/availability.json')
+      .then(r => r.json())
+      .then(setAvailability)
+      .catch(() => {})
+  }, [])
+
+  const getPaper = (track, year) => {
+    const papers = track === 'cse' ? availability.cse : availability.dsai
+    return papers.find(p => p.year === year)
+  }
+
+  const openPaper = (url) => {
+    window.open(url, '_blank')
+  }
+
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
       <div style={{ marginBottom: '40px' }}>
@@ -26,13 +53,13 @@ export default function MockTests() {
         </p>
       </div>
 
-      {/* PYQ Coming Soon - Horizontal Layout */}
+      {/* PYQ Papers */}
       <div style={{ marginBottom: '48px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
           <Calendar size={18} color="var(--accent-primary)" aria-hidden="true" />
           <h2 style={{ fontSize: '18px', fontWeight: '600' }}>Previous Year Papers</h2>
         </div>
-        
+
         <div className="mocks-pyq-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
           {/* CSE Column */}
           <div className="bento-card" style={{ padding: '20px' }}>
@@ -43,12 +70,42 @@ export default function MockTests() {
               <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent-cyan)' }}>CSE Papers</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {PYQ_YEARS.map(year => (
-                <div key={`cse-${year}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg-base)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '500' }}>GATE CSE {year}</span>
-                  <Lock size={12} color="var(--text-muted)" aria-hidden="true" />
-                </div>
-              ))}
+              {CSE_PAPERS.map((entry, idx) => {
+                const match = availability.cse.find(p => p.file.includes(`${entry.year}`) && (entry.label.includes('CS-1') ? p.file.includes('CS1') : entry.label.includes('CS-2') ? p.file.includes('CS2') : true))
+                const available = !!match
+                return (
+                  <div
+                    key={`cse-${idx}`}
+                    onClick={() => available && openPaper(match.file)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: 'var(--bg-base)',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-subtle)',
+                      cursor: available ? 'pointer' : 'default',
+                      opacity: available ? 1 : 0.6,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={e => {
+                      if (available) {
+                        e.currentTarget.style.background = 'rgba(43, 216, 196, 0.05)'
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'var(--bg-base)'
+                    }}
+                  >
+                    <span style={{ fontSize: '13px', fontWeight: '500' }}>{entry.label}</span>
+                    {available
+                      ? <ExternalLink size={12} color="var(--accent-cyan)" aria-hidden="true" />
+                      : <Lock size={12} color="var(--text-muted)" aria-hidden="true" />
+                    }
+                  </div>
+                )
+              })}
             </div>
           </div>
 
@@ -61,19 +118,49 @@ export default function MockTests() {
               <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent-purple)' }}>DSAI Papers</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {PYQ_YEARS.map(year => (
-                <div key={`dsai-${year}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg-base)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '500' }}>GATE DSAI {year}</span>
-                  <Lock size={12} color="var(--text-muted)" aria-hidden="true" />
-                </div>
-              ))}
+              {DSAI_YEARS.map(year => {
+                const paper = getPaper('dsai', year)
+                const available = !!paper
+                return (
+                  <div
+                    key={`dsai-${year}`}
+                    onClick={() => available && openPaper(paper.file)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: 'var(--bg-base)',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-subtle)',
+                      cursor: available ? 'pointer' : 'default',
+                      opacity: available ? 1 : 0.6,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={e => {
+                      if (available) {
+                        e.currentTarget.style.background = 'rgba(151, 117, 250, 0.05)'
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'var(--bg-base)'
+                    }}
+                  >
+                    <span style={{ fontSize: '13px', fontWeight: '500' }}>GATE DSAI {year}</span>
+                    {available
+                      ? <ExternalLink size={12} color="var(--accent-purple)" aria-hidden="true" />
+                      : <Lock size={12} color="var(--text-muted)" aria-hidden="true" />
+                    }
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(245, 166, 35, 0.05)', borderRadius: '8px', border: '1px solid rgba(245, 166, 35, 0.15)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-          <Lock size={12} color="var(--accent-orange)" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} aria-hidden="true" />
-          Papers coming soon! Mock test feature with timed practice sessions is under development.
+        <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(43, 216, 196, 0.05)', borderRadius: '8px', border: '1px solid rgba(43, 216, 196, 0.15)', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+          <CheckCircle size={12} color="var(--accent-cyan)" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }} aria-hidden="true" />
+          Papers fetched from official GATE website. Click available papers to open in a new tab.
         </div>
       </div>
 
@@ -83,7 +170,7 @@ export default function MockTests() {
           <Target size={18} color="var(--accent-purple)" aria-hidden="true" />
           <h2 style={{ fontSize: '18px', fontWeight: '600' }}>GATE DSAI 2027 Exam Pattern</h2>
         </div>
-        
+
         <div className="bento-card" style={{ marginBottom: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -156,7 +243,7 @@ export default function MockTests() {
           <Target size={18} color="var(--accent-cyan)" aria-hidden="true" />
           <h2 style={{ fontSize: '18px', fontWeight: '600' }}>GATE CSE 2027 Exam Pattern</h2>
         </div>
-        
+
         <div className="bento-card" style={{ marginBottom: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -212,7 +299,7 @@ export default function MockTests() {
           <Award size={18} color="var(--accent-primary)" aria-hidden="true" />
           <h2 style={{ fontSize: '18px', fontWeight: '600' }}>GATE CSE 2027 Marks Weightage</h2>
         </div>
-        
+
         <div className="bento-card">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
@@ -251,7 +338,7 @@ export default function MockTests() {
       <div className="bento-card" style={{ padding: '20px', textAlign: 'center' }}>
         <BookOpen size={24} color="var(--text-muted)" style={{ marginBottom: '8px' }} aria-hidden="true" />
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6' }}>
-          Official GATE papers are released by IIT after each exam cycle. Mock test feature coming soon with timed practice sessions.
+          Official GATE papers are released by IIT after each exam cycle. Run <code>python fetch_papers.py</code> to download available papers.
         </p>
       </div>
     </div>
