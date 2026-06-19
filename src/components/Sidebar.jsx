@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, BookOpen, Layers, Repeat, Github, ExternalLink, Download, Upload } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Layers, Repeat, Github, ExternalLink, Download, Upload, Target, TrendingUp } from 'lucide-react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { exportData, importData } from '../utils/backup'
 
@@ -90,6 +90,27 @@ export default function Sidebar({ currentTrack, setTrack, currentView, setView, 
         >
           <Repeat size={16} aria-hidden="true" />
           <span>Dual View</span>
+        </button>
+
+        <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '8px 0' }} />
+        <div className="label-caps" style={{ padding: '4px 12px 8px', fontSize: '9px' }}>EXTRA</div>
+
+        <button
+          className={`nav-item ${currentView === 'mocks' ? 'active' : ''}`}
+          onClick={() => setView('mocks')}
+          aria-current={currentView === 'mocks' ? 'page' : undefined}
+        >
+          <Target size={16} aria-hidden="true" />
+          <span>Mock Tests</span>
+        </button>
+
+        <button
+          className={`nav-item ${currentView === 'cutoffs' ? 'active' : ''}`}
+          onClick={() => setView('cutoffs')}
+          aria-current={currentView === 'cutoffs' ? 'page' : undefined}
+        >
+          <TrendingUp size={16} aria-hidden="true" />
+          <span>GATE Stats</span>
         </button>
 
         <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '8px 0' }} />

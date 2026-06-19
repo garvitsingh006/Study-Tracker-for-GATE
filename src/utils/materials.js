@@ -18,6 +18,25 @@ export function detectResourceType(url) {
   return RESOURCE_TYPE.OTHER
 }
 
+export function isLocalPath(url) {
+  return /^[a-zA-Z]:\\/.test(url) || /^\//.test(url)
+}
+
+export function toFileUrl(url) {
+  if (url.startsWith('file://')) return url
+  if (/^[a-zA-Z]:\\/.test(url)) return 'file:///' + url.replace(/\\/g, '/')
+  if (/^\//.test(url)) return 'file://' + url
+  return url
+}
+
+export function openUrl(url) {
+  if (isLocalPath(url)) {
+    window.open(toFileUrl(url), '_blank', 'noopener,noreferrer')
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+}
+
 function randomId() {
   if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID()
   return `mat_${Date.now()}_${Math.random().toString(16).slice(2)}`

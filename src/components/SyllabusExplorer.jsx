@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, RotateCcw, Plus, X, ExternalLink, Download } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { computeSummary, flattenSubtopics, nextStatus } from '../utils/progress'
-import { detectResourceType, makeMaterial } from '../utils/materials'
+import { detectResourceType, makeMaterial, openUrl } from '../utils/materials'
 
 // --- Status config ---
 const STATUS_CONFIG = {
@@ -110,9 +110,12 @@ function SubtopicRow({ subtopic, status, materials, onCycleStatus, onAddMaterial
           {subMaterials.map(mat => (
             <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <span style={{ fontSize: '9px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>{mat.type}</span>
-              <a href={mat.url} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--accent-cyan)', flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <button
+                onClick={() => openUrl(mat.url)}
+                style={{ fontSize: '12px', color: 'var(--accent-cyan)', flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+              >
                 {mat.title}
-              </a>
+              </button>
               <button onClick={() => onRemoveMaterial(subtopic.id, mat.id)} aria-label={`Remove resource: ${mat.title}`} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0, padding: '0' }}>
                 <X size={12} aria-hidden="true" />
               </button>

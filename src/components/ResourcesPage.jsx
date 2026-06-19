@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Youtube, FileText, Link2, Search, X, BookOpen } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { flattenSubtopics } from '../utils/progress'
+import { openUrl } from '../utils/materials'
 
 const TYPE_META = {
   YOUTUBE: { label: 'YouTube', icon: Youtube, color: '#FF4444' },
@@ -132,16 +133,14 @@ export default function ResourcesPage({ materials, setMaterials }) {
                   </button>
                 </div>
 
-                <a
-                  href={res.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', textDecoration: 'none', lineHeight: '1.4', display: 'block' }}
+                <button
+                  onClick={() => openUrl(res.url)}
+                  style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', textDecoration: 'none', lineHeight: '1.4', display: 'block', background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', width: '100%' }}
                   onMouseEnter={e => e.target.style.color = 'var(--accent-primary)'}
                   onMouseLeave={e => e.target.style.color = 'var(--text-primary)'}
                 >
                   {res.title}
-                </a>
+                </button>
 
                 <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{res.subtopicName}</span>
