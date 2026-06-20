@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, RotateCcw, Plus, X, ExternalLink, Download } from 'lucide-react'
+import { ChevronDown, ChevronUp, CheckCircle2, Circle, Clock, RotateCcw, Plus, X, ExternalLink, Download, StickyNote } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { computeSummary, flattenSubtopics, nextStatus } from '../utils/progress'
 import { detectResourceType, makeMaterial, openUrl } from '../utils/materials'
@@ -51,6 +51,53 @@ function AddResourceForm({ subtopicId, onAdd, onClose }) {
         <button type="submit" style={{ background: 'var(--accent-primary)', border: 'none', color: 'white', padding: '6px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Save</button>
       </div>
     </form>
+  )
+}
+
+// --- Reusable Resource Panel ---
+function ResourcePanel({ title, materials, materialKey, onAddMaterial, onRemoveMaterial }) {
+  const [adding, setAdding] = useState(false)
+  const items = materials || []
+
+  function handleAdd(subtopicId, material) {
+    onAddMaterial(materialKey, material)
+  }
+
+  return (
+    <div style={{ padding: '8px 0' }}>
+      {items.map(mat => (
+        <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          <span style={{ fontSize: '9px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>{mat.type}</span>
+          <button
+            onClick={() => openUrl(mat.url)}
+            style={{ fontSize: '12px', color: 'var(--accent-cyan)', flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', background: 'transparent', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+          >
+            {mat.title}
+          </button>
+          <button onClick={() => onRemoveMaterial(materialKey, mat.id)} aria-label={`Remove resource: ${mat.title}`} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0, padding: '0' }}>
+            <X size={12} aria-hidden="true" />
+          </button>
+        </div>
+      ))}
+
+      {!adding && (
+        <button
+          onClick={() => setAdding(true)}
+          aria-label="Add new resource"
+          style={{ marginTop: '8px', background: 'transparent', border: '1px dashed var(--border-subtle)', color: 'var(--text-secondary)', borderRadius: '4px', padding: '5px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Plus size={12} aria-hidden="true" /> Add Resource
+        </button>
+      )}
+
+      {adding && (
+        <AddResourceForm
+          subtopicId={materialKey}
+          onAdd={handleAdd}
+          onClose={() => setAdding(false)}
+        />
+      )}
+    </div>
   )
 }
 
@@ -148,6 +195,7 @@ function SubtopicRow({ subtopic, status, materials, onCycleStatus, onAddMaterial
 // --- Topic Accordion ---
 function TopicAccordion({ topic, visibleSubtopics, progress, materials, onCycleStatus, onAddMaterial, onRemoveMaterial }) {
   const [open, setOpen] = useState(false)
+  const [showTopicResources, setShowTopicResources] = useState(false)
 
   const totalSubs = visibleSubtopics.length
   const doneSubs = visibleSubtopics.filter(s => {
@@ -156,28 +204,58 @@ function TopicAccordion({ topic, visibleSubtopics, progress, materials, onCycleS
   }).length
   const pct = totalSubs ? Math.round((doneSubs / totalSubs) * 100) : 0
 
+  const topicMatKey = `topic:${topic.id}`
+  const topicMats = materials[topicMatKey] || []
+
   return (
     <div className="bento-card" style={{ marginBottom: '12px', padding: 0, overflow: 'hidden' }}>
       {/* Header */}
-      <div
-        onClick={() => setOpen(!open)}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open) } }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={open}
-        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', cursor: 'pointer', background: open ? 'var(--bg-card-hover)' : 'transparent', borderBottom: open ? '1px solid var(--border-subtle)' : 'none' }}
-      >
-        <div style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: 'var(--text-secondary)' }}>
-          <ChevronDown size={16} aria-hidden="true" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', background: open ? 'var(--bg-card-hover)' : 'transparent', borderBottom: open ? '1px solid var(--border-subtle)' : 'none' }}>
+        <div
+          onClick={() => setOpen(!open)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open) } }}
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', flexGrow: 1, cursor: 'pointer' }}
+        >
+          <div style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: 'var(--text-secondary)' }}>
+            <ChevronDown size={16} aria-hidden="true" />
+          </div>
+          <span className="label-caps" style={{ flexGrow: 1 }}>{topic.name}</span>
+          
+          {/* Inline mini progress */}
+          <span style={{ fontSize: '11px', color: pct === 100 ? 'var(--accent-green)' : 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontWeight: '600' }}>{doneSubs}/{totalSubs}</span>
+          <div className="progress-track" style={{ width: '64px', height: '4px', background: 'var(--border-subtle)', borderRadius: '2px', overflow: 'hidden' }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${topic.name} progress: ${pct}%`}>
+            <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? 'var(--accent-green)' : 'linear-gradient(to right, var(--accent-primary), var(--accent-cyan))', borderRadius: '2px', transition: 'width 0.3s' }}></div>
+          </div>
         </div>
-        <span className="label-caps" style={{ flexGrow: 1 }}>{topic.name}</span>
-        
-        {/* Inline mini progress */}
-        <span style={{ fontSize: '11px', color: pct === 100 ? 'var(--accent-green)' : 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontWeight: '600' }}>{doneSubs}/{totalSubs}</span>
-        <div className="progress-track" style={{ width: '64px', height: '4px', background: 'var(--border-subtle)', borderRadius: '2px', overflow: 'hidden' }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${topic.name} progress: ${pct}%`}>
-          <div style={{ width: `${pct}%`, height: '100%', background: pct === 100 ? 'var(--accent-green)' : 'linear-gradient(to right, var(--accent-primary), var(--accent-cyan))', borderRadius: '2px', transition: 'width 0.3s' }}></div>
-        </div>
+
+        {/* Topic resources toggle */}
+        <button
+          title="Unit notes"
+          onClick={() => setShowTopicResources(!showTopicResources)}
+          aria-expanded={showTopicResources}
+          aria-label={`${topicMats.length} resources for ${topic.name}`}
+          style={{ background: 'transparent', border: 'none', color: topicMats.length > 0 ? 'var(--accent-orange)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', flexShrink: 0, padding: '4px 6px', borderRadius: '4px' }}
+        >
+          <StickyNote size={13} aria-hidden="true" />
+          {topicMats.length > 0 && <span style={{ fontWeight: '700' }}>{topicMats.length}</span>}
+        </button>
       </div>
+
+      {/* Topic-level resources panel */}
+      {showTopicResources && (
+        <div style={{ padding: '4px 20px 8px', borderBottom: '1px solid var(--border-subtle)' }}>
+          <ResourcePanel
+            title="Unit Notes"
+            materials={topicMats}
+            materialKey={topicMatKey}
+            onAddMaterial={onAddMaterial}
+            onRemoveMaterial={onRemoveMaterial}
+          />
+        </div>
+      )}
 
       {/* Subtopics */}
       {open && (
@@ -204,22 +282,26 @@ export default function SyllabusExplorer({ currentTrack, progress, setProgress, 
   const flat = useMemo(() => flattenSubtopics(SYLLABUS), [])
   const summaryCSE = useMemo(() => computeSummary(flat, progress, 'CSE'), [flat, progress])
   const summaryDSAI = useMemo(() => computeSummary(flat, progress, 'DSAI'), [flat, progress])
+  const [showGeneralNotes, setShowGeneralNotes] = useState(false)
+  const [showSubjectResources, setShowSubjectResources] = useState({})
 
   function handleCycleStatus(subtopicId) {
     setProgress(subtopicId, nextStatus(progress[subtopicId] || 'UNSTARTED'))
   }
 
-  function handleAddMaterial(subtopicId, material) {
-    setMaterials(prev => ({ ...prev, [subtopicId]: [...(prev[subtopicId] || []), material] }))
+  function handleAddMaterial(key, material) {
+    setMaterials(prev => ({ ...prev, [key]: [...(prev[key] || []), material] }))
   }
 
-  function handleRemoveMaterial(subtopicId, materialId) {
-    setMaterials(prev => ({ ...prev, [subtopicId]: (prev[subtopicId] || []).filter(m => m.id !== materialId) }))
+  function handleRemoveMaterial(key, materialId) {
+    setMaterials(prev => ({ ...prev, [key]: (prev[key] || []).filter(m => m.id !== materialId) }))
   }
 
   const visibleSubjects = SYLLABUS.filter(subject =>
     currentTrack === 'DUAL' || subject.topics.some(t => t.subtopics.some(s => s.papers.includes(currentTrack)))
   )
+
+  const generalMats = materials['general'] || []
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.3s ease' }}>
@@ -296,36 +378,101 @@ export default function SyllabusExplorer({ currentTrack, progress, setProgress, 
         </div>
       </div>
 
-      {/* Subjects */}
-      {visibleSubjects.map(subject => (
-        <div key={subject.id} style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {subject.name}
-            {subject.topics.some(t => t.subtopics.some(s => s.papers.includes('CSE') && s.papers.includes('DSAI'))) && (
-              <span style={{ fontSize: '9px', background: 'rgba(151,117,250,0.1)', color: 'var(--accent-purple)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>HAS SHARED</span>
-            )}
-          </h2>
-
-          {subject.topics.map(topic => {
-            const visibleSubtopics = currentTrack === 'DUAL'
-              ? topic.subtopics
-              : topic.subtopics.filter(s => s.papers.includes(currentTrack))
-            if (visibleSubtopics.length === 0) return null
-            return (
-              <TopicAccordion
-                key={topic.id}
-                topic={topic}
-                visibleSubtopics={visibleSubtopics}
-                progress={progress}
-                materials={materials}
-                onCycleStatus={handleCycleStatus}
-                onAddMaterial={handleAddMaterial}
-                onRemoveMaterial={handleRemoveMaterial}
-              />
-            )
-          })}
+      {/* General Notes Section */}
+      <div className="bento-card" style={{ marginBottom: '24px', padding: 0, overflow: 'hidden' }}>
+        <div
+          onClick={() => setShowGeneralNotes(!showGeneralNotes)}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowGeneralNotes(!showGeneralNotes) } }}
+          role="button"
+          tabIndex={0}
+          aria-expanded={showGeneralNotes}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 20px', cursor: 'pointer', background: showGeneralNotes ? 'var(--bg-card-hover)' : 'transparent', borderBottom: showGeneralNotes ? '1px solid var(--border-subtle)' : 'none' }}
+        >
+          <StickyNote size={16} color="var(--accent-orange)" aria-hidden="true" />
+          <span style={{ fontSize: '14px', fontWeight: '600', flexGrow: 1, color: 'var(--text-primary)' }}>General Notes</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>YouTube playlists, full syllabus resources, reference material…</span>
+          {generalMats.length > 0 && (
+            <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-orange)', background: 'rgba(245,166,35,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{generalMats.length}</span>
+          )}
+          <div style={{ transform: showGeneralNotes ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: 'var(--text-secondary)' }}>
+            <ChevronDown size={16} aria-hidden="true" />
+          </div>
         </div>
-      ))}
+        {showGeneralNotes && (
+          <div style={{ padding: '8px 20px 12px' }}>
+            <ResourcePanel
+              title="General Notes"
+              materials={generalMats}
+              materialKey="general"
+              onAddMaterial={handleAddMaterial}
+              onRemoveMaterial={handleRemoveMaterial}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Subjects */}
+      {visibleSubjects.map(subject => {
+        const subjectMatKey = `subject:${subject.id}`
+        const subjectMats = materials[subjectMatKey] || []
+        const subjectExpanded = showSubjectResources[subject.id] || false
+
+        return (
+          <div key={subject.id} style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0, flexGrow: 1 }}>
+                {subject.name}
+              </h2>
+              {subject.topics.some(t => t.subtopics.some(s => s.papers.includes('CSE') && s.papers.includes('DSAI'))) && (
+                <span style={{ fontSize: '9px', background: 'rgba(151,117,250,0.1)', color: 'var(--accent-purple)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>HAS SHARED</span>
+              )}
+              {/* Subject resources toggle */}
+              <button
+                title="Subject notes"
+                onClick={() => setShowSubjectResources(prev => ({ ...prev, [subject.id]: !prev[subject.id] }))}
+                aria-expanded={subjectExpanded}
+                aria-label={`${subjectMats.length} resources for ${subject.name}`}
+                style={{ background: 'transparent', border: 'none', color: subjectMats.length > 0 ? 'var(--accent-orange)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '4px 8px', borderRadius: '4px' }}
+              >
+                <StickyNote size={14} aria-hidden="true" />
+                {subjectMats.length > 0 && <span style={{ fontWeight: '700' }}>{subjectMats.length}</span>}
+              </button>
+            </div>
+
+            {/* Subject-level resources panel */}
+            {subjectExpanded && (
+              <div className="bento-card" style={{ marginBottom: '16px', padding: '12px 20px' }}>
+                <ResourcePanel
+                  title="Subject Notes"
+                  materials={subjectMats}
+                  materialKey={subjectMatKey}
+                  onAddMaterial={handleAddMaterial}
+                  onRemoveMaterial={handleRemoveMaterial}
+                />
+              </div>
+            )}
+
+            {subject.topics.map(topic => {
+              const visibleSubtopics = currentTrack === 'DUAL'
+                ? topic.subtopics
+                : topic.subtopics.filter(s => s.papers.includes(currentTrack))
+              if (visibleSubtopics.length === 0) return null
+              return (
+                <TopicAccordion
+                  key={topic.id}
+                  topic={topic}
+                  visibleSubtopics={visibleSubtopics}
+                  progress={progress}
+                  materials={materials}
+                  onCycleStatus={handleCycleStatus}
+                  onAddMaterial={handleAddMaterial}
+                  onRemoveMaterial={handleRemoveMaterial}
+                />
+              )
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }

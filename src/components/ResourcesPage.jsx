@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Youtube, FileText, Link2, Search, X, BookOpen } from 'lucide-react'
+import { Youtube, FileText, Link2, Search, X, BookOpen, StickyNote } from 'lucide-react'
 import SYLLABUS from '../data/syllabus'
 import { flattenSubtopics } from '../utils/progress'
 import { openUrl } from '../utils/materials'
@@ -11,34 +11,66 @@ const TYPE_META = {
   OTHER: { label: 'Link', icon: Link2, color: 'var(--text-secondary)' },
 }
 
+function buildLabelMap() {
+  const map = {}
+  for (const subject of SYLLABUS) {
+    map[`subject:${subject.id}`] = { label: subject.name, kind: 'Subject' }
+    for (const topic of subject.topics) {
+      map[`topic:${topic.id}`] = { label: topic.name, kind: 'Unit' }
+    }
+  }
+  return map
+}
+
 export default function ResourcesPage({ materials, setMaterials }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('ALL')
+  const [levelFilter, setLevelFilter] = useState('ALL')
   const flat = useMemo(() => flattenSubtopics(SYLLABUS), [])
+  const labelMap = useMemo(() => buildLabelMap(), [])
 
   const allResources = useMemo(() => {
     const list = []
-    for (const [subtopicId, items] of Object.entries(materials)) {
+    for (const [key, items] of Object.entries(materials)) {
       if (!items?.length) continue
-      const subtopic = flat.find(s => s.id === subtopicId)
-      if (!subtopic) continue
       for (const item of items) {
-        list.push({ ...item, subtopicId, subtopicName: subtopic.name, papers: subtopic.papers })
+        let subtopicName = ''
+        let papers = []
+        let kind = 'Subtopic'
+
+        if (key === 'general') {
+          subtopicName = 'General Notes'
+          papers = ['CSE', 'DSAI']
+          kind = 'General'
+        } else if (key.startsWith('subject:') || key.startsWith('topic:')) {
+          const meta = labelMap[key]
+          subtopicName = meta ? meta.label : key
+          papers = ['CSE', 'DSAI']
+          kind = meta ? meta.kind : 'Unit'
+        } else {
+          const subtopic = flat.find(s => s.id === key)
+          if (!subtopic) continue
+          subtopicName = subtopic.name
+          papers = subtopic.papers
+        }
+
+        list.push({ ...item, materialKey: key, subtopicName, papers, kind })
       }
     }
     return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  }, [materials, flat])
+  }, [materials, flat, labelMap])
 
   const filtered = useMemo(() => allResources.filter(res => {
     const s = searchTerm.toLowerCase()
     const matchSearch = !s || res.title.toLowerCase().includes(s) || res.subtopicName.toLowerCase().includes(s)
     const matchType = typeFilter === 'ALL' || res.type === typeFilter
-    return matchSearch && matchType
-  }), [allResources, searchTerm, typeFilter])
+    const matchLevel = levelFilter === 'ALL' || res.kind === levelFilter
+    return matchSearch && matchType && matchLevel
+  }), [allResources, searchTerm, typeFilter, levelFilter])
 
-  function handleRemove(subtopicId, materialId) {
+  function handleRemove(materialKey, materialId) {
     if (!window.confirm('Remove this resource?')) return
-    setMaterials(prev => ({ ...prev, [subtopicId]: prev[subtopicId].filter(m => m.id !== materialId) }))
+    setMaterials(prev => ({ ...prev, [materialKey]: prev[materialKey].filter(m => m.id !== materialId) }))
   }
 
   return (
@@ -46,12 +78,12 @@ export default function ResourcesPage({ materials, setMaterials }) {
       {/* Header */}
       <div style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>Saved Resources</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>All your bookmarks, notes, videos, and PYQs in one place. Add resources from the Syllabus tab.</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>All your bookmarks, notes, videos, and PYQs in one place. Add resources from the Syllabus tab — general, subject, unit, or subtopic level.</p>
       </div>
 
       {/* Controls */}
-      <div className="resource-controls" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', flexGrow: 1 }}>
+      <div className="resource-controls" style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', flexGrow: 1, minWidth: '200px' }}>
           <Search size={15} color="var(--text-muted)" aria-hidden="true" />
           <label htmlFor="resource-search" className="sr-only">Search resources</label>
           <input
@@ -81,11 +113,24 @@ export default function ResourcesPage({ materials, setMaterials }) {
           <option value="PYQ">PYQs</option>
           <option value="OTHER">Other Links</option>
         </select>
+        <label htmlFor="resource-level-filter" className="sr-only">Filter by level</label>
+        <select
+          id="resource-level-filter"
+          value={levelFilter}
+          onChange={e => setLevelFilter(e.target.value)}
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}
+        >
+          <option value="ALL">All Levels</option>
+          <option value="General">General</option>
+          <option value="Subject">Subject</option>
+          <option value="Unit">Unit</option>
+          <option value="Subtopic">Subtopic</option>
+        </select>
       </div>
 
       {/* Stats bar */}
       {allResources.length > 0 && (
-        <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', padding: '12px 16px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', padding: '12px 16px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
           {Object.entries(TYPE_META).map(([key, meta]) => {
             const count = allResources.filter(r => r.type === key).length
             const Icon = meta.icon
@@ -107,7 +152,7 @@ export default function ResourcesPage({ materials, setMaterials }) {
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-secondary)' }}>
           <BookOpen size={48} color="var(--border-subtle)" style={{ display: 'block', margin: '0 auto 16px' }} />
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No resources yet.</h3>
-          <p style={{ fontSize: '14px' }}>Go to the <strong>Syllabus</strong> tab, expand any topic, and click the link icon to save a resource.</p>
+          <p style={{ fontSize: '14px' }}>Go to the <strong>Syllabus</strong> tab, expand any topic, and click the link or note icon to save a resource.</p>
         </div>
       )}
 
@@ -117,6 +162,14 @@ export default function ResourcesPage({ materials, setMaterials }) {
           {filtered.map(res => {
             const meta = TYPE_META[res.type] || TYPE_META.OTHER
             const Icon = meta.icon
+            const kindColors = {
+              General: 'var(--accent-orange)',
+              Subject: 'var(--accent-cyan)',
+              Unit: 'var(--accent-purple)',
+              Subtopic: 'var(--text-secondary)',
+            }
+            const kindColor = kindColors[res.kind] || 'var(--text-secondary)'
+
             return (
               <div
                 key={res.id}
@@ -124,11 +177,14 @@ export default function ResourcesPage({ materials, setMaterials }) {
                 style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: meta.color, fontSize: '10px', fontWeight: '700', letterSpacing: '0.05em' }}>
-                    <Icon size={13} />
-                    {meta.label.toUpperCase()}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: meta.color, fontSize: '10px', fontWeight: '700', letterSpacing: '0.05em' }}>
+                      <Icon size={13} />
+                      {meta.label.toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: '8px', background: `${kindColor}15`, color: kindColor, padding: '2px 6px', borderRadius: '4px', fontWeight: '700', letterSpacing: '0.03em' }}>{res.kind.toUpperCase()}</span>
                   </div>
-                  <button onClick={() => handleRemove(res.subtopicId, res.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '0' }}>
+                  <button onClick={() => handleRemove(res.materialKey, res.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '0' }}>
                     <X size={14} />
                   </button>
                 </div>
@@ -160,7 +216,7 @@ export default function ResourcesPage({ materials, setMaterials }) {
       {allResources.length > 0 && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-secondary)' }}>
           <p>No resources match your search.</p>
-          <button onClick={() => { setSearchTerm(''); setTypeFilter('ALL') }} style={{ marginTop: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', fontSize: '13px', cursor: 'pointer' }}>Clear filters</button>
+          <button onClick={() => { setSearchTerm(''); setTypeFilter('ALL'); setLevelFilter('ALL') }} style={{ marginTop: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', fontSize: '13px', cursor: 'pointer' }}>Clear filters</button>
         </div>
       )}
     </div>
